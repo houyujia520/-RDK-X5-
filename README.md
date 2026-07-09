@@ -68,4 +68,4 @@ Zhenghe Health Monitoring System is an innovative intelligent health management 
 | **Frontend UI** | HTML5 + CSS3 | Modern web technologies |
 
 ## 📋 Technical Documentation
-- [Technical Documentation](https://github.com/zj-zhangjie/vision-health-monitor/blob/main/docs/vision-health-monitor.md)
+- [Technical Documentation](https://github.com/houyujia520/-RDK-X5-/blob/main/docs/%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3.pdf)
