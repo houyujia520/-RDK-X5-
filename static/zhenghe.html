@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🧍 人体姿态 / 💊 OCR / 💓 心率 · RDK X5</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: linear-gradient(145deg, #0b1120 0%, #1a2332 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .dashboard {
+            max-width: 1400px;
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(12px);
+            border-radius: 40px;
+            padding: 30px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.8);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .header h1 {
+            font-size: 26px;
+            font-weight: 700;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .header h1 span {
+            background: linear-gradient(135deg, #7c3aed, #a855f7);
+            padding: 6px 14px;
+            border-radius: 100px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+        }
+        .status-badge {
+            background: rgba(52,211,153,0.15);
+            border: 1px solid rgba(52,211,153,0.25);
+            padding: 8px 20px;
+            border-radius: 40px;
+            color: #34d399;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .status-badge::before {
+            content: '';
+            width: 10px;
+            height: 10px;
+            background: #34d399;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity:1; transform:scale(1); }
+            50% { opacity:0.4; transform:scale(0.8); }
+            100% { opacity:1; transform:scale(1); }
+        }
+        .mode-switch {
+            display: flex;
+            gap: 8px;
+            background: rgba(255,255,255,0.05);
+            padding: 4px;
+            border-radius: 40px;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .mode-btn {
+            padding: 8px 18px;
+            border: none;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            background: transparent;
+            color: rgba(255,255,255,0.5);
+            transition: all 0.2s;
+        }
+        .mode-btn.active {
+            background: rgba(124, 58, 237, 0.4);
+            color: #fff;
+            box-shadow: 0 0 16px rgba(124,58,237,0.2);
+        }
+        .mode-btn:hover:not(.active) {
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 28px;
+        }
+        @media (max-width: 960px) {
+            .grid { grid-template-columns: 1fr; gap:20px; }
+        }
+        .video-card {
+            background: rgba(0,0,0,0.45);
+            border-radius: 28px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.06);
+            box-shadow: 0 20px 40px -12px rgba(0,0,0,0.6);
+            position: relative;
+        }
+        .video-card img,
+        .video-card canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 16/9;
+            object-fit: cover;
+            background: #111;
+        }
+        .video-overlay {
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(6px);
+            padding: 8px 16px;
+            border-radius: 40px;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 500;
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .video-overlay .dot {
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse 1.5s infinite;
+        }
+        .info-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .info-card {
+            background: rgba(255,255,255,0.04);
+            backdrop-filter: blur(4px);
+            border-radius: 24px;
+            padding: 22px 24px;
+            border: 1px solid rgba(255,255,255,0.06);
+            transition: all 0.2s;
+        }
+        .info-card:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.12);
+        }
+        .info-card .title {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: rgba(255,255,255,0.35);
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .info-card .value {
+            font-size: 36px;
+            font-weight: 700;
+            color: #ffffff;
+            line-height: 1.2;
+        }
+        .info-card .value .unit {
+            font-size: 16px;
+            font-weight: 400;
+            color: rgba(255,255,255,0.4);
+            margin-left: 6px;
+        }
+        .info-card .sub {
+            font-size: 15px;
+            color: rgba(255,255,255,0.5);
+            margin-top: 6px;
+        }
+        .fall-status {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 12px;
+        }
+        .fall-status .indicator {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: inline-block;
+            transition: background 0.3s;
+        }
+        .fall-status .indicator.safe {
+            background: #34d399;
+            box-shadow: 0 0 16px rgba(52,211,153,0.3);
+        }
+        .fall-status .indicator.danger {
+            background: #ef4444;
+            box-shadow: 0 0 16px rgba(239,68,68,0.4);
+            animation: pulse 1s infinite;
+        }
+        .fall-status .label {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+        }
+        .fall-status .label.danger {
+            color: #ef4444;
+        }
+        .detection-list {
+            max-height: 300px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .detection-list::-webkit-scrollbar {
+            width: 4px;
+        }
+        .detection-list::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.04);
+            border-radius: 10px;
+        }
+        .detection-list::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.15);
+            border-radius: 10px;
+        }
+        .detection-item {
+            background: rgba(255,255,255,0.04);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            border-left: 3px solid rgba(255,255,255,0.1);
+            transition: all 0.15s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .detection-item:hover {
+            background: rgba(255,255,255,0.08);
+        }
+        .detection-item .info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .detection-item .info .id {
+            font-weight: 600;
+            color: #fff;
+            font-size: 15px;
+        }
+        .detection-item .info .detail {
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+        }
+        .detection-item .tag {
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .tag.safe {
+            background: rgba(52,211,153,0.15);
+            color: #34d399;
+        }
+        .tag.danger {
+            background: rgba(239,68,68,0.15);
+            color: #ef4444;
+        }
+        .ocr-result {
+            margin-top: 8px;
+        }
+        .ocr-result .drug-name {
+            font-size: 22px;
+            font-weight: 700;
+            color: #60a5fa;
+        }
+        .ocr-result .drug-advice {
+            font-size: 16px;
+            color: rgba(255,255,255,0.8);
+            margin-top: 4px;
+        }
+        .ocr-result .drug-texts {
+            font-size: 13px;
+            color: rgba(255,255,255,0.4);
+            margin-top: 12px;
+            max-height: 80px;
+            overflow-y: auto;
+            word-break: break-all;
+        }
+        .heart-result {
+            margin-top: 8px;
+        }
+        .heart-result .bpm {
+            font-size: 48px;
+            font-weight: 700;
+            color: #60a5fa;
+        }
+        .heart-result .bpm-label {
+            font-size: 16px;
+            color: rgba(255,255,255,0.6);
+        }
+        .heart-result .sqi {
+            color: #34d399;
+        }
+        .heart-result .avg {
+            color: #fbbf24;
+        }
+        .empty-state {
+            color: rgba(255,255,255,0.25);
+            font-size: 15px;
+            text-align: center;
+            padding: 30px 0;
+        }
+        .error-state {
+            color: #ef4444;
+            font-size: 14px;
+            text-align: center;
+            padding: 20px 0;
+        }
+        @media (max-width: 600px) {
+            .dashboard { padding:16px; border-radius:24px; }
+            .header h1 { font-size:20px; }
+            .status-badge { font-size:12px; padding:4px 12px; }
+            .info-card .value { font-size:28px; }
+            .mode-btn { font-size:12px; padding:6px 12px; }
+        }
+    </style>
+</head>
+<body>
+<div class="dashboard">
+    <div class="header">
+        <h1>🧍 人体姿态 / 💊 OCR / 💓 心率 <span>RDK X5</span></h1>
+        <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+            <div class="mode-switch">
+                <button id="btnPose" class="mode-btn active">🧍 姿态</button>
+                <button id="btnOcr" class="mode-btn">💊 OCR</button>
+                <button id="btnHeart" class="mode-btn">💓 心率</button>
+            </div>
+            <div class="status-badge">实时监测 · 运行中</div>
+        </div>
+    </div>
+    <div class="grid">
+        <div class="video-card">
+            <canvas id="streamCanvas"></canvas>
+            <img id="streamImg" src="/video_feed" alt="视频流" style="position:absolute; left:-9999px; width:1px; height:1px; opacity:0; visibility:hidden;" />
+            <div class="video-overlay"><span class="dot"></span> 直播中</div>
+        </div>
+        <div class="info-panel">
+            <div class="info-card" id="mainInfoCard">
+                <div class="title" id="infoTitle">👥 检测统计</div>
+                <div class="value" id="mainValue">0 <span class="unit">人</span></div>
+                <div id="fallStatusContainer" style="display:block;">
+                    <div class="fall-status">
+                        <span class="indicator safe" id="fallIndicator"></span>
+                        <span class="label" id="fallLabel">✅ 安全</span>
+                    </div>
+                </div>
+                <div id="ocrResultContainer" style="display:none;">
+                    <div class="ocr-result">
+                        <div class="drug-name" id="drugName">--</div>
+                        <div class="drug-advice" id="drugAdvice">等待识别...</div>
+                        <div class="drug-texts" id="drugTexts"></div>
+                    </div>
+                </div>
+                <div id="heartResultContainer" style="display:none;">
+                    <div class="heart-result">
+                        <div class="bpm" id="heartBpm">0.0</div>
+                        <div class="bpm-label">BPM</div>
+                        <div style="margin-top:8px;">
+                            <span style="color:rgba(255,255,255,0.5);">SQI: </span>
+                            <span class="sqi" id="heartSqi">0.00</span>
+                        </div>
+                        <div style="margin-top:4px;">
+                            <span style="color:rgba(255,255,255,0.5);">3秒平均: </span>
+                            <span class="avg" id="heartAvg">0.0</span>
+                            <span style="color:rgba(255,255,255,0.4);"> BPM</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="sub" id="lastUpdate">等待数据...</div>
+            </div>
+            <div class="info-card" style="flex:1;">
+                <div class="title" id="detailTitle">📋 检测详情</div>
+                <div id="detectionListContainer"><div class="empty-state">暂无检测到人体</div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_BASE = '';
+    let currentMode = 'pose';
+
+    const streamImg = document.getElementById('streamImg');
+    const streamCanvas = document.getElementById('streamCanvas');
+    const streamCtx = streamCanvas.getContext('2d');
+    let wbEnabled = true;
+
+    function whiteBalanceImageData(imageData) {
+        const data = imageData.data;
+        let sumR = 0, sumG = 0, sumB = 0;
+        const pixelCount = data.length / 4;
+        for (let i = 0; i < data.length; i += 4) {
+            sumR += data[i];
+            sumG += data[i + 1];
+            sumB += data[i + 2];
+        }
+        const avgR = sumR / pixelCount;
+        const avgG = sumG / pixelCount;
+        const avgB = sumB / pixelCount;
+        const avgGray = (avgR + avgG + avgB) / 3;
+        const kr = avgGray / (avgR || 1);
+        const kg = avgGray / (avgG || 1);
+        const kb = avgGray / (avgB || 1);
+        const clamp = value => Math.max(0, Math.min(255, value));
+        for (let i = 0; i < data.length; i += 4) {
+            data[i] = clamp(data[i] * kr);
+            data[i + 1] = clamp(data[i + 1] * kg);
+            data[i + 2] = clamp(data[i + 2] * kb);
+        }
+        return imageData;
+    }
+
+    function updateStreamCanvas() {
+        if (streamImg.naturalWidth > 0 && streamImg.naturalHeight > 0) {
+            const displayWidth = streamImg.naturalWidth;
+            const displayHeight = streamImg.naturalHeight;
+            if (streamCanvas.width !== displayWidth || streamCanvas.height !== displayHeight) {
+                streamCanvas.width = displayWidth;
+                streamCanvas.height = displayHeight;
+            }
+            streamCtx.drawImage(streamImg, 0, 0, displayWidth, displayHeight);
+            if (wbEnabled) {
+                try {
+                    const imageData = streamCtx.getImageData(0, 0, displayWidth, displayHeight);
+                    streamCtx.putImageData(whiteBalanceImageData(imageData), 0, 0);
+                } catch (e) {
+                    console.warn('白平衡处理失败：', e);
+                }
+            }
+        }
+        requestAnimationFrame(updateStreamCanvas);
+    }
+
+    function startStreamProcessing() {
+        if (streamImg.complete && streamImg.naturalWidth > 0) {
+            requestAnimationFrame(updateStreamCanvas);
+        } else {
+            streamImg.addEventListener('load', () => {
+                requestAnimationFrame(updateStreamCanvas);
+            });
+            streamImg.addEventListener('error', (e) => {
+                console.error('视频流加载失败:', e);
+            });
+        }
+    }
+
+    startStreamProcessing();
+
+    async function switchMode(mode) {
+        try {
+            const resp = await fetch('/api/mode', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode: mode })
+            });
+            const data = await resp.json();
+            if (data.status === 'ok') {
+                currentMode = data.mode;
+                updateModeUI(data.mode);
+                fetchStatus();
+            } else {
+                console.error('Switch mode error:', data);
+            }
+        } catch (e) {
+            console.error('Switch mode fetch error:', e);
+        }
+    }
+
+    function updateModeUI(mode) {
+        const btnPose = document.getElementById('btnPose');
+        const btnOcr = document.getElementById('btnOcr');
+        const btnHeart = document.getElementById('btnHeart');
+        btnPose.classList.toggle('active', mode === 'pose');
+        btnOcr.classList.toggle('active', mode === 'ocr');
+        btnHeart.classList.toggle('active', mode === 'heartbeat');
+
+        const fallContainer = document.getElementById('fallStatusContainer');
+        const ocrContainer = document.getElementById('ocrResultContainer');
+        const heartContainer = document.getElementById('heartResultContainer');
+        const titleElem = document.getElementById('infoTitle');
+        const detailTitle = document.getElementById('detailTitle');
+
+        fallContainer.style.display = 'none';
+        ocrContainer.style.display = 'none';
+        heartContainer.style.display = 'none';
+
+        if (mode === 'pose') {
+            fallContainer.style.display = 'block';
+            titleElem.textContent = '👥 检测统计';
+            detailTitle.textContent = '📋 检测详情';
+        } else if (mode === 'ocr') {
+            ocrContainer.style.display = 'block';
+            titleElem.textContent = '💊 药品识别';
+            detailTitle.textContent = '📋 识别文本';
+        } else if (mode === 'heartbeat') {
+            heartContainer.style.display = 'block';
+            titleElem.textContent = '💓 心率监测';
+            detailTitle.textContent = '📊 实时数据';
+        }
+    }
+
+    async function fetchStatus() {
+        try {
+            const resp = await fetch('/api/status');
+            if (!resp.ok) {
+                const text = await resp.text();
+                throw new Error(`HTTP ${resp.status}: ${text.substring(0, 100)}`);
+            }
+            const data = await resp.json();
+            if (data.error) {
+                throw new Error(`API error: ${data.error}`);
+            }
+            if (data.mode === 'pose') {
+                renderPoseData(data);
+            } else if (data.mode === 'ocr') {
+                renderOcrData(data.ocr);
+            } else if (data.mode === 'heartbeat') {
+                renderHeartData(data);
+            }
+            updateModeUI(data.mode);
+            document.getElementById('lastUpdate').textContent = `更新于 ${new Date().toLocaleTimeString()}`;
+        } catch (err) {
+            console.error('Fetch error:', err);
+            document.getElementById('detectionListContainer').innerHTML =
+                `<div class="error-state">⚠️ 连接失败: ${err.message}</div>`;
+            document.getElementById('lastUpdate').textContent = `错误: ${err.message}`;
+        }
+    }
+
+    function renderPoseData(data) {
+        const people = data.people_count || 0;
+        const detections = data.detections || [];
+        document.getElementById('mainValue').innerHTML = `${people} <span class="unit">人</span>`;
+
+        let hasFall = false;
+        let fallCount = 0;
+        if (Array.isArray(detections)) {
+            detections.forEach(item => { if (item.fall) { hasFall = true; fallCount++; } });
+        }
+        const indicator = document.getElementById('fallIndicator');
+        const label = document.getElementById('fallLabel');
+        if (hasFall) {
+            indicator.className = 'indicator danger';
+            label.className = 'label danger';
+            label.textContent = `⚠️ 摔倒 (${fallCount}人)`;
+        } else {
+            indicator.className = 'indicator safe';
+            label.className = 'label';
+            label.textContent = '✅ 安全';
+        }
+
+        const container = document.getElementById('detectionListContainer');
+        if (!Array.isArray(detections) || detections.length === 0) {
+            container.innerHTML = `<div class="empty-state">暂无检测到人体</div>`;
+            return;
+        }
+        let html = '<div class="detection-list">';
+        detections.forEach((item, idx) => {
+            const score = (item.score != null) ? (item.score * 100).toFixed(1) : '0.0';
+            const kptCount = (item.keypoints && Array.isArray(item.keypoints)) ? item.keypoints.length : 0;
+            const statusClass = item.fall ? 'danger' : 'safe';
+            const statusText = item.fall ? '⚠️ 摔倒' : '✅ 站立';
+            html += `
+                <div class="detection-item">
+                    <div class="info">
+                        <div class="id">#${idx+1}  置信度 ${score}%</div>
+                        <div class="detail">🦴 关键点 ${kptCount} 个</div>
+                    </div>
+                    <span class="tag ${statusClass}">${statusText}</span>
+                </div>
+            `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    function renderOcrData(ocr) {
+        const name = ocr.matched_name || '未匹配';
+        const advice = ocr.matched_advice || '无建议';
+        const texts = ocr.texts || [];
+
+        document.getElementById('mainValue').innerHTML = `💊 ${name}`;
+        document.getElementById('drugName').textContent = name;
+        document.getElementById('drugAdvice').textContent = advice;
+
+        const container = document.getElementById('detectionListContainer');
+        if (texts.length === 0) {
+            container.innerHTML = `<div class="empty-state">未识别到文字</div>`;
+        } else {
+            let html = '<div class="detection-list">';
+            texts.forEach((text, idx) => {
+                html += `<div class="detection-item"><div class="info"><div class="id">#${idx+1}</div><div class="detail">${text}</div></div></div>`;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+    }
+
+    function renderHeartData(data) {
+        const hr = data.heart_rate || {};
+        const bpm = hr.bpm || 0.0;
+        const sqi = hr.sqi || 0.0;
+        const avg = hr.avg3s_hr || 0.0;
+
+        document.getElementById('mainValue').innerHTML = `${bpm.toFixed(1)} <span class="unit">BPM</span>`;
+        document.getElementById('heartBpm').textContent = bpm.toFixed(1);
+        document.getElementById('heartSqi').textContent = sqi.toFixed(2);
+        document.getElementById('heartAvg').textContent = avg.toFixed(1);
+
+        const container = document.getElementById('detectionListContainer');
+        container.innerHTML = `
+            <div class="detection-item">
+                <div class="info">
+                    <div class="id">心率</div>
+                    <div class="detail">信号质量指数 (SQI)</div>
+                </div>
+                <span class="tag ${sqi > 0.5 ? 'safe' : 'danger'}">${sqi > 0.5 ? '✅ 良好' : '⚠️ 较差'}</span>
+            </div>
+            <div class="detection-item">
+                <div class="info">
+                    <div class="id">3秒平均</div>
+                    <div class="detail">平滑心率</div>
+                </div>
+                <span class="tag safe">${avg.toFixed(1)} BPM</span>
+            </div>
+        `;
+    }
+
+    document.getElementById('btnPose').addEventListener('click', () => switchMode('pose'));
+    document.getElementById('btnOcr').addEventListener('click', () => switchMode('ocr'));
+    document.getElementById('btnHeart').addEventListener('click', () => switchMode('heartbeat'));
+
+    setInterval(fetchStatus, 500);
+    fetchStatus();
+</script>
+</body>
+</html>
