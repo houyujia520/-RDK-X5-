@@ -71,6 +71,6 @@ Zhenghe Health Monitoring System is an innovative intelligent health management 
 ## 📋 Technical Documentation
 - [Technical Documentation](https://github.com/houyujia520/-RDK-X5-/blob/main/docs/%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3.pdf)
 
-- ## 🎥 Project Demo
+## 🎥 Project Demo
 
 - [Nodehub Technical Showcase](https://developer.d-robotics.cc/nodehubdetail/2075056640813641729) — Contains complete project introduction, feature demonstrations, and technical details.
